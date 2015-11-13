@@ -52,19 +52,17 @@
   /kD/arrows/.cd,
     ->/.style={-Stealth},
   /kD/lattices/.cd,
-    comb/.style={
-      /tikz/row sep={sqrt(3/4)*#1,between origins},
+    rect/.style 2 args={
       /tikz/column sep={#1,between origins},
+      /tikz/row sep={#2,between origins},},
+    comb/.style={
+      rect={#1}{sqrt(3/4)*#1},
       /tikz/every even row/.style={xshift=-0.5*#1},},
     comb/.default=4em,
-    mesh/.style={
-      /tikz/row sep={#1,between origins},
-      /tikz/column sep={#1,between origins},},
-    mesh/.default=4em,
-    gold/.style={
-      /tikz/row sep=#1,
-      /tikz/column sep=1.618*#1,},
-    gold/.default=1.618em,
+    mesh/.style={rect={#1}{#1}},
+    mesh/.default=3em,
+    gold/.style={rect={1.618*#1}{#1}},
+    gold/.default=3em,
   /kD/arrows/.cd,
     l>/.style={bend right,->},
     r>/.style={bend left,->},
