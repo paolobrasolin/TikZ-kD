@@ -78,10 +78,10 @@
 \startcommutativediagram
 
 \lattice[gold]{
-            & \obj \ker a;   & \obj \ker b;   & \obj \ker c;   \\
+            & \obj \ker a;   & \obj \ker b;   & \obj \ker c;   & \\
             & \obj A;        & \obj B;        & \obj C;        & \obj 0; \\
-\obj(0'):0; & \obj A';       & \obj B';       & \obj C';       \\
-            & \obj \coker a; & \obj \coker b; & \obj \coker c; \\
+\obj(0'):0; & \obj A';       & \obj B';       & \obj C';       & \\
+            & \obj \coker a; & \obj \coker b; & \obj \coker c; & \\
 };
 
 \mor {ker a} -> {ker b} -> {ker c};
@@ -93,9 +93,9 @@
 \mor {ker b} -> B <:b:-> B' -> {coker b};
 \mor {ker c} -> C <:c:-> C' -> {coker c};
 
-\coordinate (tail) at ($(ker b)!2!(ker c)$);
-\coordinate (head) at ($(coker b)!2!(coker a)$);
-\coordinate (belly) at ($(tail)!0.52!(head)$);
+\coordinate (tail) at ($(ker b)!2.4!(ker c)$);
+\coordinate (head) at ($(coker b)!2.4!(coker a)$);
+\coordinate (belly) at ($(tail)!0.51!(head)$);
 \draw[/kD/arrows/.cd,÷>,rounded corners]
   (ker c) -- (tail) -- (tail|-belly) -- (head|-belly) -- (head) -- (coker a);
 

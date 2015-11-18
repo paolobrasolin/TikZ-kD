@@ -17,25 +17,44 @@
 
 % ######################################################################## SOF #
 
+% The cleanser is based upon a circuit between three TikZ keys:
+%   input --(1)-> process --(2)-> output
+
+% First we define three possible behaviors of the expansion to be performed on
+% the input before processing.  These correspond to three mutually exclusive
+% different wirings for (1).  By default the no-expansion route is wired.
 \pgfqkeys{/cleanser/expand}{.is choice,
   none/.style={/cleanser/input/.style={/cleanser/process={##1}}},
   once/.style={/cleanser/input/.style={/cleanser/process/.expand once={##1}}},
-  full/.style={/cleanser/input/.style={/cleanser/process/.expanded={##1}}}}
+  full/.style={/cleanser/input/.style={/cleanser/process/.expanded={##1}}},
+  none,} % default behaviour
 
+% Then we wire (2) using the Plain TeX sanitizer and the TikZ gizmo to handle
+% console output that we're defining later.
+\pgfqkeys{/cleanser/process}{.code={
+  \kDSanitize#1\into tmp\GO
+  \pgfkeysalso{/cleanser/log={\Meaning = "\tmp"}}
+  \pgfkeysalso{/cleanser/output/.expand once=\tmp}},}
+
+% Here is the handler for console output.
+\newif\ifcleanserisverbose
 \pgfqkeys{/cleanser}{
-  expand=none,
-  output/.initial={},
-  process/.code={
-    \kDSanitize#1\into tmp\GO
-    \message{[Cleanser: \Meaning-> \tmp]}
-    \pgfkeysalso{/cleanser/output/.expand once=\tmp}},
-}
+  verbose/.is if=cleanserisverbose,
+  verbose=true,
+  log/.code={
+    \ifcleanserisverbose
+      \let~\space
+      \newlinechar=`\^
+      \message{cleanser ~~~~~~ > #1^}
+    \fi},}
 
-\tikzset{
-  self naming node/.style={
-    node contents/.forward to=/cleanser/input,
-    /cleanser/output/.forward to=/tikz/name,},
-}
+% Here is the main reason for all this: a style to make a node self-naming.
+% Again, it's just a matter of wiring a simple sircuit.
+\pgfqkeys{/tikz/self naming node}{.style={
+  node contents/.forward to=/cleanser/input,
+  /cleanser/output/.forward to=/tikz/name,},}
+
+% No more TikZ code is needed.  What follows s just the Plain TeX sanitizer.
 
 \def\kDMeanCut#1:->#2\into#3\GO%
   {\kDCSDef{#3}{#2}}
