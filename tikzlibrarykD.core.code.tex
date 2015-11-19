@@ -17,37 +17,39 @@
 
 % ######################################################################## SOF #
 
-% ==================================================================== STYLING =
+%\pgfkeys{
+%  /kD/failsafe/.code={%
+%    \let\searchname=\pgfkeyscurrentname%
+%    \pgfkeys{
+%      /tikz/\searchname/.try=#1,
+%      /tikz/node contents/.retry/.expand once=\searchname,
+%      }},
+%}%.unknown/.style={/kD/failsafe=#1},
 
-\def\kDRemoveParens(#1){#1}
-\def\kDNamingShortcut#1{\pgfkeysalso{/tikz/name={\kDRemoveParens#1}}}
+% ==================================================================== STYLING =
 
 % Default settings
 \pgfqkeys{/kD}{
   .search also=/tikz,
+%  lattices/.search also=/tikz,
+%  every lattice/.style={/kD/lattices/.cd},
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  current chain/.style={},
+%  current chain/arrows/.style={},
+%  current chain/labels/.style={},
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   objects/.search also=/tikz,
   arrows/.search also=/tikz,
   labels/.search also=/tikz,
-  lattices/.search also=/tikz,
-  every object/.style={/kD/objects/.cd},
-  every arrow/.style={/kD/arrows/.cd},
-  every label/.style={/kD/labels/.cd},
-  every lattice/.style={/kD/lattices/.cd},
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  current chain/.style={},
-  current chain/arrows/.style={},
-  current chain/labels/.style={},
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  every object/.append style={
+  every object/.style={
     self naming node,},
-  every arrow/.append style={
-    /kD/current chain/arrows,},
-  every label/.append style={
+  every arrow/.style={},
+  every label/.style={
     self naming node,
     auto,
-    font=\everymath\expandafter{\the\everymath\scriptstyle},
     inner sep=+0.5ex,
-    /kD/current chain/labels,},
+    font=\everymath\expandafter{\the\everymath\scriptstyle},},
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   /kD/arrows/.cd,
     ->/.style={-Stealth},
@@ -83,8 +85,40 @@
     >/.style={near end},
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   /handlers/first char syntax=true,
+  /handlers/first char syntax/the character "/.initial=\kDMathContentShortcut,
   /handlers/first char syntax/the character (/.initial=\kDNamingShortcut,
+  /tikz/edge node list/.code args={[#1]#2}{
+    \ifx\relax#1\relax\else\tikzset{edge node={node[/kD/.cd,every label,labels/.cd,#1]}}\fi
+    \ifx\relax#2\relax\else\tikzset{edge node list={#2}}\fi
+  },
+  /tikz/node math contents/.style={/tikz/node contents={$#1$}}
 }
+
+\def\kDRemoveRoundParenthesis(#1){#1}
+\def\kDRemoveDoubleQuotes"#1"{#1}
+\def\kDNamingShortcut#1%
+  {\pgfkeysalso{% a conditional is necessary: do alias iff name is empty
+     /tikz/name/.expand once={\kDRemoveRoundParenthesis#1},
+     /tikz/alias/.expand once={\kDRemoveRoundParenthesis#1},}}
+\def\kDMathContentShortcut#1%
+  {\pgfkeysalso{/tikz/node math contents/.expand once={\kDRemoveDoubleQuotes#1}}}
+
+\pgfqkeys{/kD/parser}{
+  object/.code={
+    \pgfkeysalso{/kD/current object/.style={#1}}},
+  morphism/.code={
+    \kDBisect#1\at:\into SND\and FST\GO%
+    \pgfkeysalso{/kD/current arrow/.style={}}
+    \pgfkeysalso{/kD/parser/arrow={\SND}}
+    \pgfkeysalso{/kD/parser/labels/.expand once={\FST}}},
+  labels/.code={\def\doit##1##2\GO{\def\tmp{##1}}\def\sqr{[}\doit#1\GO%
+    \ifx\tmp\sqr%
+      \pgfkeysalso{/kD/current arrow/.append style={edge node list={#1}}}\else%
+      \pgfkeysalso{/kD/current arrow/.append style={edge node list={[#1]}}}\fi},
+  arrow/.code={
+    \pgfkeysalso{/kD/current arrow/.append style/.expand once={#1}}},
+}
+
 
 % =========================================================== arrow keys: CHOP =
 
@@ -109,7 +143,7 @@
       {\pgfpointdecoratedinputsegmentsupporta}
       {\pgfpointdecoratedinputsegmentsupportb}
       {\pgfpointdecoratedinputsegmentlast}},
-    lineto code={ % kinda raw, this one
+    lineto code={
       \kDFullExpandAfter\kDChopParse{#1}\GO
       \pgfpathcurvebetweentime{\start}{\stop}
       {\pgfpointdecoratedinputsegmentfirst}
@@ -121,68 +155,56 @@
   /kD/arrows/schop/.style={/kD/arrows/chop=#1|*|#1},
 }
 
-% ========================================================= DRAWING PRIMITIVES =
-
-\def\kDObject#1\withNode#2\GO%
-  {\node[/kD/every object, node contents={$#1$}, #2];}
-
-\def\kDMorphism#1\withNode#2\withEdge#3\from#4\to#5\GO%
-  {\path (#4) edge [/kD/every arrow, #3, edge node={
-              node [/kD/every label, node contents={$#1$}, #2]}] (#5);}
-
 % ========================================================== PARAMETER PARSING =
 
 \def\kDDoObject#1\GO%
-  {\kDBisect#1\at:\into MathSpec\and NodeSpec\GO%
-   \expandafter\expandafter\expandafter\kDObject%
-   \expandafter\MathSpec\expandafter\withNode\NodeSpec\GO}
+  {\node [/kD/parser/object={#1},
+          /kD/objects/.cd,
+          /kD/every object,
+          /kD/current object];}
 
 \def\kDDoMorphism#1 #2 #3\GO%
-  {\kDTrisect#2\at:\into EdgeSpec\and MathSpec\and NodeSpec\GO%
-   \def\tmp{\NodeSpec,\kDChainOptions} % ------------------------------------------ WARNING, THIS WON'T WORK
-   \expandafter\expandafter\expandafter%
-   \expandafter\expandafter\expandafter%
-   \expandafter\kDMorphism\expandafter%
-   \expandafter\expandafter\MathSpec%
-   \expandafter\expandafter\expandafter%
-   \withNode\expandafter\NodeSpec%
-   \expandafter\withEdge\EdgeSpec\from#1\to#3\GO}
+  {\path (#1) edge [/kD/parser/morphism={#2},
+                    /kD/arrows/.cd,
+                    /kD/every arrow,
+                    /kD/current arrow] (#3);}
 
-\let\kDThisSource\relax \let\kDLastSource\relax
-\let\kDThisTarget\relax \let\kDLastTarget\relax
-\def\kDLast{*}
+%\let\kDThisSource\relax \let\kDLastSource\relax
+%\let\kDThisTarget\relax \let\kDLastTarget\relax
+%\def\kDLast{*}
 
 \def\kDDoMorphismChain#1 #2 #3 #4\GO%
-  {\def\kDSource{#1}\ifx\kDSource\kDLast\let\kDSource\kDLastSource\fi
-   \def\kDTarget{#3}\ifx\kDTarget\kDLast\let\kDTarget\kDLastTarget\fi
-   \kDDoMorphism{\kDSource} {#2} {\kDTarget}\GO%
-   \ifx\kDThisSource\relax\let\kDThisSource\kDSource\fi
-   \ifx\relax#4\relax
-   \let\kDLastSource\kDThisSource\let\kDThisSource\relax
-   \let\kDLastTarget\kDTarget
-   \else\kDDoMorphismChain{#3} #4\GO\fi}
+  {%\def\kDSource{#1}\ifx\kDSource\kDLast\let\kDSource\kDLastSource\fi
+   %\def\kDTarget{#3}\ifx\kDTarget\kDLast\let\kDTarget\kDLastTarget\fi
+   \kDDoMorphism{#1} {#2} {#3}\GO%
+   %\ifx\kDThisSource\relax\let\kDThisSource\kDSource\fi
+   \ifx\relax#4\relax% LAST CHAR BEFORE \GO MUST ME SPACE!
+   %\let\kDLastSource\kDThisSource\let\kDThisSource\relax
+   %\let\kDLastTarget\kDTarget
+   \else\kDDoMorphismChain{#3} #4\GO%
+   \fi}
 
 % ============================================================= USER INTERFACE =
 
 \def\obj#1;%
   {\kDDoObject#1\GO}
 
-\def\kDChainOptions{}
+%\def\kDChainOptions{}
 
 \def\MorChain #1;{%
-  \pgfkeys{/kD/current chain/arrows/.style={}}%
-  \pgfkeys{/kD/current chain/labels/.style={}}%
-  \kDDoMorphismChain #1 \GO}
+%  \pgfkeys{/kD/current chain/arrows/.style={}}%
+%  \pgfkeys{/kD/current chain/labels/.style={}}%
+  \kDDoMorphismChain#1 \GO}
 \def\MorOpt[#1] #2;{%
-  \kDBisect#1\at:\into ArrowSpec\and LabelSpec\GO%
-  \pgfkeys{/kD/current chain/arrows/.estyle=\ArrowSpec}%
-  \pgfkeys{/kD/current chain/labels/.estyle=\LabelSpec}%
-  \kDDoMorphismChain #2 \GO}
+%  \kDBisect#1\at:\into ArrowSpec\and LabelSpec\GO%
+%  \pgfkeys{/kD/current chain/arrows/.estyle=\ArrowSpec}%
+%  \pgfkeys{/kD/current chain/labels/.estyle=\LabelSpec}%
+  \kDDoMorphismChain#2 \GO}
 
 \def\mor{\let\kDCommonOpt\relax\futurelet\MaybeSquare\MaybeOptMor}
 \def\MaybeOptMor{\ifx[\MaybeSquare \let\next\MorOpt
 \else \let\next\MorChain \fi \next}
 
-\def\lattice[#1]{\matrix[/kD/every lattice,#1]}
+%\def\lattice[#1]{\matrix[/kD/every lattice,#1]}
 
 % ######################################################################## EOF #
