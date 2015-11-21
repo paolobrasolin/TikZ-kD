@@ -45,13 +45,13 @@
     \ifcleanserisverbose
       \let~\space
       \newlinechar=`\^
-      \message{kD:cleanser ~~~ > #1^}
+      \message{kD.cleanser ~~~ > #1^}
     \fi},}
 
 % Here is the main reason for all this: a style to make a node self-naming.
 % Again, it's just a matter of wiring a simple sircuit.
 \pgfqkeys{/tikz/self naming node}{.style={
-  node contents/.forward to=/cleanser/input,
+  /tikz/node contents/.forward to=/cleanser/input,
   /cleanser/output/.forward to=/tikz/name,},}
 
 % No more TikZ code is needed.  What follows s just the Plain TeX sanitizer.

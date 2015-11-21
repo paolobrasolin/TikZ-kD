@@ -20,16 +20,26 @@
 % Default settings
 \pgfqkeys{/kD}{
   .search also=/tikz,
-%  lattices/.search also=/tikz,
-%  every lattice/.style={/kD/lattices/.cd},
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  objects/.search also=/tikz,
+%  objects/.search also=/tikz,
+  objects/.unknown/.code={%
+    \let\searchname=\pgfkeyscurrentname%
+    \pgfkeysalso{
+      /tikz/\searchname/.try=#1,
+      /tikz/node math contents/.retry/.expand once=\searchname}},
   arrows/.search also=/tikz,
-  labels/.search also=/tikz,
+%  labels/.search also=/tikz,
+  labels/.unknown/.code={%
+    \let\searchname=\pgfkeyscurrentname%
+    \pgfkeysalso{
+      /tikz/\searchname/.try=#1,
+      /tikz/node math contents/.retry/.expand once=\searchname}},
+  lattices/.search also=/tikz,
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   current object/.style={},
   current arrow/.style={},
   current label/.style={},
+  current lattice/.style={},
   current chain/every arrow/.style={},
   current chain/every label/.style={},
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,24 +49,25 @@
   every label/.style={
     self naming node,
     auto,
-    inner sep=+0.5ex,
-    font=\everymath\expandafter{\the\everymath\scriptstyle},},
+    /tikz/inner sep=+0.5ex,
+    /tikz/font=\everymath\expandafter{\the\everymath\scriptstyle},},
+  every lattice/.style={},
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  arrows/.cd,
+  /kD/arrows/.cd,
     ->/.style={-Stealth},
-  lattices/.cd,
-    rect/.style 2 args={
+  /kD/lattices/.cd,
+    rectangular/.style 2 args={
       /tikz/column sep={#1,between origins},
       /tikz/row sep={#2,between origins},},
+    square/.style={rectangular={#1}{#1},},
+    golden/.style={rectangular={1.618*#1}{#1},},
     comb/.style={
-      rect={#1}{sqrt(3/4)*#1},
-      /tikz/every even row/.style={xshift=-0.5*#1},},
+      rectangular={sqrt(4/3)*#1}{#1},
+      /tikz/every odd row/.style={xshift=tan(30)*#1},},
     comb/.default=4em,
-    mesh/.style={rect={#1}{#1}},
-    mesh/.default=3em,
-    gold/.style={rect={1.618*#1}{#1}},
-    gold/.default=3em,
-  arrows/.cd,
+    square/.default=4em,
+    golden/.default=4em,
+  /kD/arrows/.cd,
     l>/.style={bend right,->},
     r>/.style={bend left,->},
     crossing over/.style={preaction={-,
@@ -70,7 +81,7 @@
       {shift={($(\tikztostart)!#1!-90:(\tikztotarget)-(\tikztostart)$)}}},
     slide/.style={transform canvas=
       {shift={($(\tikztostart)!#1!0:(\tikztotarget)-(\tikztostart)$)}}},
-  labels/.cd,
+  /kD/labels/.cd,
     mid/.style={inner sep=1.5pt,shape=circle,fill=white,anchor=center},
     </.style={near start},
     >/.style={near end},}
@@ -106,6 +117,7 @@
   object/.forward to=/kD/current object/.style,
   arrow/.forward to=/kD/current arrow/.style,
   label/.forward to=/kD/current label/.style,
+  lattice/.forward to=/kD/current lattice/.style,
   morphism/.style={
     /kD/parse/bisect={#1}at{:}into{kDSND}and{kDFST},
     /kD/parse/arrow/.expand once=\kDSND,
@@ -140,7 +152,11 @@
     /kD/labels/.cd,
     /kD/every label,
     /kD/current chain/every label,
-    /kD/current label,},}
+    /kD/current label,},
+  lattice/.style={
+    /kD/lattices/.cd,
+    /kD/every lattice,
+    /kD/current lattice,},}
 
 % =========================================================== arrow keys: CHOP =
 
@@ -219,6 +235,7 @@
   {\ifx[\kDFirstCharacter\let\kDTmp\kDDoMorphismChainWithOptions%
    \else\let\kDTmp\kDDoMorphismChainWithoutOptions\fi\kDTmp}
 
-%\def\lattice[#1]{\matrix[/kD/every lattice,#1]}
+\def\lattice[#1]%
+  {\matrix [/kD/parse/lattice={#1}, /kD/render/lattice] }
 
 % ######################################################################## EOF #
