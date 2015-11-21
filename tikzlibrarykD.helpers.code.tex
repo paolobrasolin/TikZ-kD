@@ -40,14 +40,14 @@
       \else\kDCSDef{#3}{##1}\Rimmer##2\GO\fi}%
    \Cutter#1#2\GO}
 
-\def\kDTrisect#1\at#2\into#3\and#4\and#5\GO%
-  {\def\Cut#2##1#2##2#2##3#2##4\GO%
-     {\def\cnt{##4}\def\one{#2}\def\two{#2#2}\def\thr{#2#2#2}
-      \ifx\cnt\one\kDCSDef{#3}{##1}\kDCSDef{#4}{}   \kDCSDef{#5}{}   \else
-      \ifx\cnt\two\kDCSDef{#3}{##2}\kDCSDef{#4}{##1}\kDCSDef{#5}{}   \else
-      \ifx\cnt\thr\kDCSDef{#3}{##3}\kDCSDef{#4}{##2}\kDCSDef{#5}{##1}\else
-      \errmessage{PROBLEMS, YO!}\fi\fi\fi}
-   \Cut#2#1#2#2#2#2\GO}
+%\def\kDTrisect#1\at#2\into#3\and#4\and#5\GO%
+%  {\def\Cut#2##1#2##2#2##3#2##4\GO%
+%     {\def\cnt{##4}\def\one{#2}\def\two{#2#2}\def\thr{#2#2#2}
+%      \ifx\cnt\one\kDCSDef{#3}{##1}\kDCSDef{#4}{}   \kDCSDef{#5}{}   \else
+%      \ifx\cnt\two\kDCSDef{#3}{##2}\kDCSDef{#4}{##1}\kDCSDef{#5}{}   \else
+%      \ifx\cnt\thr\kDCSDef{#3}{##3}\kDCSDef{#4}{##2}\kDCSDef{#5}{##1}\else
+%      \errmessage{PROBLEMS, YO!}\fi\fi\fi}
+%   \Cut#2#1#2#2#2#2\GO}
 
 \def\kDBisect#1\at#2\into#3\and#4\GO%
   {\def\Cut#2##1#2##2#2##3\GO%
