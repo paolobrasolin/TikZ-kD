@@ -19,30 +19,26 @@
 
 % Default settings
 \pgfqkeys{/kD}{
-  .search also=/tikz,
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  objects/.search also=/tikz,
-  objects/.unknown/.code={%
+%
+  fallback/.code={
     \let\searchname=\pgfkeyscurrentname%
     \pgfkeysalso{
       /tikz/\searchname/.try=#1,
       /tikz/node math contents/.retry/.expand once=\searchname}},
+%
+  objects/.unknown/.style={/kD/fallback=#1},
   arrows/.search also=/tikz,
-%  labels/.search also=/tikz,
-  labels/.unknown/.code={%
-    \let\searchname=\pgfkeyscurrentname%
-    \pgfkeysalso{
-      /tikz/\searchname/.try=#1,
-      /tikz/node math contents/.retry/.expand once=\searchname}},
+  labels/.unknown/.style={/kD/fallback=#1},
   lattices/.search also=/tikz,
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
   current object/.style={},
   current arrow/.style={},
   current label/.style={},
   current lattice/.style={},
+%
   current chain/every arrow/.style={},
   current chain/every label/.style={},
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
   every object/.style={
     self naming node,},
   every arrow/.style={},
@@ -52,7 +48,7 @@
     /tikz/inner sep=+0.5ex,
     /tikz/font=\everymath\expandafter{\the\everymath\scriptstyle},},
   every lattice/.style={},
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
   /kD/arrows/.cd,
     ->/.style={-Stealth},
   /kD/lattices/.cd,
@@ -112,8 +108,14 @@
 }
 
 \pgfqkeys{/kD/parse}{
+%
   bisect/.code args={#1at#2into#3and#4}{%
     \kDBisect#1\at#2\into#3\and#4\GO},
+%
+  /tikz/edge node string/.code args={[#1]#2}{
+    \ifx\relax#1\relax\else\tikzset{edge node={node[/kD/parse/label={#1},/kD/render/label]}}\fi%
+    \ifx\relax#2\relax\else\tikzset{edge node string={#2}}\fi},
+%
   object/.forward to=/kD/current object/.style,
   arrow/.forward to=/kD/current arrow/.style,
   label/.forward to=/kD/current label/.style,
@@ -133,9 +135,6 @@
       \pgfkeysalso{/kD/current arrow/.append style={edge node string={#1}}}\else%
       \pgfkeysalso{/kD/current arrow/.append style={edge node string={[#1]}}}\fi%
     \fi},
-  /tikz/edge node string/.code args={[#1]#2}{
-    \ifx\relax#1\relax\else\tikzset{edge node={node[/kD/parse/label={#1},/kD/render/label]}}\fi%
-    \ifx\relax#2\relax\else\tikzset{edge node string={#2}}\fi},
 }
 
 \pgfqkeys{/kD/render}{
@@ -228,12 +227,9 @@
 \def\obj#1;%
   {\kDDoObject#1\GO}
 
-\def\mor%
-  {\futurelet\kDFirstCharacter\kDDoMorphismChainMaybeOptions}
-
-\def\kDDoMorphismChainMaybeOptions%
-  {\ifx[\kDFirstCharacter\let\kDTmp\kDDoMorphismChainWithOptions%
-   \else\let\kDTmp\kDDoMorphismChainWithoutOptions\fi\kDTmp}
+\kDDefOptional mor\with%
+  \kDDoMorphismChainWithOptions\and%
+  \kDDoMorphismChainWithoutOptions\GO
 
 \def\lattice[#1]%
   {\matrix [/kD/parse/lattice={#1}, /kD/render/lattice] }
