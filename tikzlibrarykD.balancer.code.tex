@@ -27,6 +27,19 @@
 % These macros here parse just single numbers, but standard gobbling procedure
 % can easily generalize the parsing to a string like the example.
 
+%\def\kDChopParse#1|#2|#3\GO%
+%  {\kDBalancerInit\pgfdecoratedpathlength
+%   \kDBalancerTally#1\to One\GO
+%   \kDBalancerTally#2\to Two\GO
+%   \kDBalancerTally#3\to Thr\GO
+%   \expandafter\kDBalancerGauge\One\to Fst\GO
+%   \expandafter\kDBalancerGauge\Thr\to Lst\GO
+%   \pgfmathsetmacro\start{\Fst}
+%   \pgfmathsetmacro\stop{1-\Lst}}
+
+%\pgfqkeys{/kD/balancer}{
+%}
+
 % Basic initialization
 \def\kDBalancerInit#1%
   {\def\kDBalancerLoose{0}%

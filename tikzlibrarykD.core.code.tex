@@ -17,25 +17,27 @@
 
 % ######################################################################## SOF #
 
-% Default settings
+% =============================================================== BASIC STYLES =
+
 \pgfqkeys{/kD}{
 %
-  fallback/.code={
+  node math contents/.style={/tikz/node contents={$#1$}},
+%
+  fallback to/.code args={#1=#2}{%
     \let\searchname=\pgfkeyscurrentname%
     \pgfkeysalso{
-      /tikz/\searchname/.try=#1,
-      /tikz/node math contents/.retry/.expand once=\searchname}},
+      /tikz/\searchname/.try=#2,
+      #1/.retry/.expand once=\searchname,}},
 %
-  objects/.unknown/.style={/kD/fallback=#1},
+  objects/.unknown/.style={/kD/fallback to={/kD/node math contents=#1}},
   arrows/.search also=/tikz,
-  labels/.unknown/.style={/kD/fallback=#1},
+  labels/.unknown/.style={/kD/fallback to={/kD/node math contents=#1}},
   lattices/.search also=/tikz,
 %
   current object/.style={},
   current arrow/.style={},
   current label/.style={},
   current lattice/.style={},
-%
   current chain/every arrow/.style={},
   current chain/every label/.style={},
 %
@@ -45,12 +47,22 @@
   every label/.style={
     self naming node,
     auto,
-    /tikz/inner sep=+0.5ex,
+    /tikz/inner sep=0.5ex,
     /tikz/font=\everymath\expandafter{\the\everymath\scriptstyle},},
   every lattice/.style={},
 %
   /kD/arrows/.cd,
-    ->/.style={-Stealth},
+    crossing over/.style={preaction={-,
+      draw=\pgfkeysvalueof{/kD/arrows/crossing over/color},
+      line width=\pgfkeysvalueof{/kD/arrows/crossing over/clearance},},},
+    crossing over/clearance/.initial=0.5ex,
+    crossing over/color/.initial=white,
+    shift/.style={transform canvas=
+      {shift={($(\tikztostart)!#1!-90:(\tikztotarget)-(\tikztostart)$)},},},
+    slide/.style={transform canvas=
+      {shift={($(\tikztostart)!#1!0:(\tikztotarget)-(\tikztostart)$)},},},
+  /kD/labels/.cd,
+    mid/.style={shape=circle,fill=white,anchor=center},
   /kD/lattices/.cd,
     rectangular/.style 2 args={
       /tikz/column sep={#1,between origins},
@@ -63,26 +75,17 @@
     comb/.default=4em,
     square/.default=4em,
     golden/.default=4em,
+%
   /kD/arrows/.cd,
     l>/.style={bend right,->},
     r>/.style={bend left,->},
-    crossing over/.style={preaction={-,
-      draw=\pgfkeysvalueof{/kD/arrows/crossing over/color},
-      line width=\pgfkeysvalueof{/kD/arrows/crossing over/clearance},},},
-    crossing over/clearance/.initial=0.236em,
-    crossing over/color/.initial=white,
     ÷/.style={crossing over},
     ÷>/.style={÷,->},
-    shift/.style={transform canvas=
-      {shift={($(\tikztostart)!#1!-90:(\tikztotarget)-(\tikztostart)$)}}},
-    slide/.style={transform canvas=
-      {shift={($(\tikztostart)!#1!0:(\tikztotarget)-(\tikztostart)$)}}},
   /kD/labels/.cd,
-    mid/.style={inner sep=1.5pt,shape=circle,fill=white,anchor=center},
     </.style={near start},
     >/.style={near end},}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% =========================================================== SPECIAL HANDLERS =
 
 \pgfqkeys{/handlers}{
   first char syntax=true,
@@ -90,32 +93,31 @@
   the character (/.initial=\kDNamingShortcut,
   the character "/.initial=\kDContentShortcut,}
 
-\def\kDRemoveRoundParentheses(#1){#1}
-\def\kDRemoveDoubleQuotes"#1"{#1}
-
-% A conditional here would be nice (do alias iff name is empty) but unnecessary
+% TODO: do alias iff name is empty
 \def\kDNamingShortcut#1{\pgfkeysalso{
-  /tikz/name/.expand once={\kDRemoveRoundParentheses#1},
-  /tikz/alias/.expand once={\kDRemoveRoundParentheses#1},}}
+  /tikz/name/.expand once={\kDPeelRoundParentheses#1},
+  /tikz/alias/.expand once={\kDPeelRoundParentheses#1},}}
 
 \def\kDContentShortcut#1{\pgfkeysalso{
-  /tikz/node math contents/.expand once={\kDRemoveDoubleQuotes#1}}}
+  /kD/node math contents/.expand once={\kDPeelDoubleQuotes#1}}}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\kDPeelRoundParentheses(#1){#1}
 
-\tikzset{
-  /tikz/node math contents/.style={/tikz/node contents={$#1$}}
-}
+\def\kDPeelDoubleQuotes"#1"{#1}
+
+% ==================================================================== PARSING =
 
 \pgfqkeys{/kD/parse}{
-%
   bisect/.code args={#1at#2into#3and#4}{%
-    \kDBisect#1\at#2\into#3\and#4\GO},
-%
+    \def\Cut#2##1#2##2#2##3\GO%
+      {\def\cnt{##3}\def\one{#2}\def\two{#2#2}%
+       \ifx\cnt\one\kDCSDef{#3}{##1}\kDCSDef{#4}{}\else%
+       \ifx\cnt\two\kDCSDef{#3}{##2}\kDCSDef{#4}{##1}\else%
+       \errmessage{A bisection crashed.}\fi\fi}%
+    \Cut#2#1#2#2#2\GO},
   /tikz/edge node string/.code args={[#1]#2}{
     \ifx\relax#1\relax\else\tikzset{edge node={node[/kD/parse/label={#1},/kD/render/label]}}\fi%
     \ifx\relax#2\relax\else\tikzset{edge node string={#2}}\fi},
-%
   object/.forward to=/kD/current object/.style,
   arrow/.forward to=/kD/current arrow/.style,
   label/.forward to=/kD/current label/.style,
@@ -134,8 +136,10 @@
     \ifx\tmp\sqr%
       \pgfkeysalso{/kD/current arrow/.append style={edge node string={#1}}}\else%
       \pgfkeysalso{/kD/current arrow/.append style={edge node string={[#1]}}}\fi%
-    \fi},
-}
+    \fi},}
+
+% ================================================================== RENDERING =
+% Styles to render every kind of object are defined.
 
 \pgfqkeys{/kD/render}{
   object/.style={
@@ -157,8 +161,7 @@
     /kD/every lattice,
     /kD/current lattice,},}
 
-% =========================================================== arrow keys: CHOP =
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\def\kDChopParse#1|#2|#3\GO%
 %  {\kDBalancerInit\pgfdecoratedpathlength
 %   \kDBalancerTally#1\to One\GO
@@ -168,7 +171,6 @@
 %   \expandafter\kDBalancerGauge\Thr\to Lst\GO
 %   \pgfmathsetmacro\start{\Fst}
 %   \pgfmathsetmacro\stop{1-\Lst}}
-%
 %
 %\tikzset{/kD/arrows/chop/.style={ 
 %  decoration={ 
@@ -189,29 +191,32 @@
 %      {\pgfpointdecoratedinputsegmentlast}}
 %  },decorate},
 %  % the following key has to be integrated into the syntax of the main key
-%  /kD/arrows/schop/.style={/kD/arrows/chop=#1|*|#1},
-%}
+%  /kD/arrows/schop/.style={/kD/arrows/chop=#1|*|#1},}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% ========================================================== PARAMETER PARSING =
+% ============================================================ INTERNAL MACROS =
+% The TikZ code is used to define mid level macros.
 
-\def\kDDoObject#1\GO%
+\def\kDDoObject#1;%
   {\node [/kD/parse/object={#1}, /kD/render/object];}
 
 \def\kDDoMorphism#1 #2 #3\GO%
   {\path (#1) edge [/kD/parse/morphism={#2}, /kD/render/morphism] (#3);}
 
-%\let\kDThisSource\relax \let\kDLastSource\relax
-%\let\kDThisTarget\relax \let\kDLastTarget\relax
-%\def\kDLast{*}
+% TODO: I don't like the mechanism handling the * shortcut
+
+\let\kDThisSource\relax \let\kDLastSource\relax
+\let\kDThisTarget\relax \let\kDLastTarget\relax
+\def\kDLast{*}
 
 \def\kDDoMorphismChain#1 #2 #3 #4\GO%
-  {%\def\kDSource{#1}\ifx\kDSource\kDLast\let\kDSource\kDLastSource\fi
-   %\def\kDTarget{#3}\ifx\kDTarget\kDLast\let\kDTarget\kDLastTarget\fi
-   \kDDoMorphism{#1} {#2} {#3}\GO%
-   %\ifx\kDThisSource\relax\let\kDThisSource\kDSource\fi
+  {\def\kDSource{#1}\ifx\kDSource\kDLast\let\kDSource\kDLastSource\fi%
+   \def\kDTarget{#3}\ifx\kDTarget\kDLast\let\kDTarget\kDLastTarget\fi%
+   \kDDoMorphism{\kDSource} {#2} {\kDTarget}\GO%
+   \ifx\kDThisSource\relax\let\kDThisSource\kDSource\fi%
    \ifx\relax#4\relax%
-   %\let\kDLastSource\kDThisSource\let\kDThisSource\relax
-   %\let\kDLastTarget\kDTarget
+   \let\kDLastSource\kDThisSource\let\kDThisSource\relax%
+   \let\kDLastTarget\kDTarget%
    \else\kDDoMorphismChain{#3} #4\GO%
    \fi}
 
@@ -222,16 +227,23 @@
   {\pgfqkeys{/kD/parse}{chain={#1}}%
    \kDDoMorphismChain#2 \GO}
 
-% ============================================================= USER INTERFACE =
+\def\kDDoLatticeWithoutOptions%
+  {\kDDoLatticeWithOptions[]}
 
-\def\obj#1;%
-  {\kDDoObject#1\GO}
+\def\kDDoLatticeWithOptions[#1]%
+  {\matrix [/kD/parse/lattice={#1}, /kD/render/lattice] }
 
-\kDDefOptional mor\with%
+% ============================================================ EXTERNAL MACROS =
+% Mid level macros are bundled up into high level macros for the final user.
+
+\kDCSDef{obj}{\kDDoObject}
+
+\kDCSDefOptional mor\with%
   \kDDoMorphismChainWithOptions\and%
   \kDDoMorphismChainWithoutOptions\GO
 
-\def\lattice[#1]%
-  {\matrix [/kD/parse/lattice={#1}, /kD/render/lattice] }
+\kDCSDefOptional lattice\with%
+  \kDDoLatticeWithOptions\and%
+  \kDDoLatticeWithoutOptions\GO
 
 % ######################################################################## EOF #
